@@ -132,13 +132,13 @@ skyplatform.new_platform = function( player, height, loopcount )
 		return;
 	end
 	local p = {x=math.floor(0-skyplatform.SIZE/2), y=math.floor(height-skyplatform.HEIGHT+1), z=math.floor(0-skyplatform.SIZE/2)};
-	player:setpos( p );
+	player:setpos( {x=0,y=height+3,z=0} );
 
 	if( not( loopcount )) then
 		loopcount = 0;
 	end
-	local node = minetest.get_node( p  );
-	if( height ~= 0 ) then
+	local node = minetest.get_node( {x=0,y=height-2,z=0}  );
+	--if( height ~= 0 ) then
 		if( not( node ) or not( node.name ) or node.name == 'ignore' ) then
 			-- abort if there's no success after some time
 			if( loopcount > 5 ) then
@@ -152,12 +152,15 @@ skyplatform.new_platform = function( player, height, loopcount )
 		end
 
 		if( node and node.name and node.name~='air') then
-			minetest.chat_send_player( player:get_player_name(),
-				'Cannot create a new sky platform at height '..tostring( height)..
-				'. Please remove the nodes there first!');
+			if( height ~= 0 ) then
+				minetest.chat_send_player( player:get_player_name(),
+					'Cannot create a new sky platform at height '..tostring( height)..
+					'. Please remove the nodes there first!');
+				player:setpos( {x=0, y=height, z=0} );
+			end
 			return;
 		end
-	end
+	--end
 
 	-- place the initial sky platform
 	minetest.place_schematic( p, skyplatform.SCHEMATIC, "0", skyplatform.replacements[ skyplatform.start_platform_type ], true );
@@ -242,12 +245,13 @@ minetest.register_node("skyplatform:horizon", {
 -- handle spawning of players
 -----------------------------
 local function spawnplayer(player)
-	player:setpos( skyplatform.spawn_pos );
-	-- if there is no ground yet, do create the first sky platform
-	local node = minetest.get_node( skyplatform.spawn_pos );
-	if( not( node ) or not( node.name ) or node.name=='air') then
-		skyplatform.new_platform( player, 0, 0 );
+	if( minetest.setting_get("static_spawnpoint")) then
+		return;
 	end
+
+	minetest.set_node( skyplatform.spawn_pos, {name='default:brick'});
+	player:setpos( skyplatform.spawn_pos );
+	skyplatform.new_platform( player, 0, 0 );
 end
 
 minetest.register_on_newplayer(function(player)
